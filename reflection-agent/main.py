@@ -14,14 +14,20 @@ class State(MessagesState):
     pass
 
 
-def generation_node(state: State) -> State:
-    ret = generate_chain.invoke({"messages": state["messages"]})
-    return State(messages=[ret])
+async def generation_node(state: State) -> State:
+    return {"messages": [await generate_chain.ainvoke(state["messages"])]}
 
 
-def reflection_node(state: State) -> State:
-    ret = reflect_chain.invoke({"messages": state["messages"]})
-    return State(messages=[HumanMessage(content=ret.content)])
+async def reflection_node(state: State) -> State:
+    # Other messages we need to adjust
+    cls_map = {"ai": HumanMessage, "human": AIMessage}
+    # First message is the original user request. We hold it the same for all nodes
+    translated = [state["messages"][0]] + [
+        cls_map[msg.type](content=msg.content) for msg in state["messages"][1:]
+    ]
+    res = await reflect_chain.ainvoke(translated)
+    # We treat the output of this as human feedback for the generator
+    return {"messages": [HumanMessage(content=res.content)]}
 
 
 builder = StateGraph(State)
@@ -40,7 +46,7 @@ def reflect_should_continue(state: State):
     if (
         not state["messages"][-1].content
         or not state["messages"][-1].content.strip()
-        or state["messages"][-1].content == "FINAL: No further recommendations."
+        or "FINAL: No further recommendations." in state["messages"][-1].content
     ):
         return END
     return GENERATE
@@ -55,18 +61,25 @@ graph = builder.compile()
 
 
 if __name__ == "__main__":
-    print("Thinking...")
-    input = HumanMessage(
-        content="""
-            Make this tweet better: "
-                @LangChainAI
-                - newly Tool Calling feature is seriously underrated.
-                After long wait, it's here- making the implementation of agents across different models with function calling - super easy
-                                
-                Made a video covering their newes blog post"
-        """
-    )
-    state = State(messages=[input])
-    response = graph.invoke(state)
-    final_message = [x for x in response["messages"] if isinstance(x, AIMessage)][-1]
-    print(final_message.content)
+    import asyncio
+
+    async def main():
+        print("Thinking...")
+        input = HumanMessage(
+            content="""
+                Make this tweet better: "
+                    @LangChainAI
+                    - newly Tool Calling feature is seriously underrated.
+                    After long wait, it's here- making the implementation of agents across different models with function calling - super easy
+                                    
+                    Made a video covering their newes blog post"
+            """
+        )
+        state = State(messages=[input])
+        response = await graph.ainvoke(state)
+        final_message = [x for x in response["messages"] if isinstance(x, AIMessage)][
+            -1
+        ]
+        print(final_message.content)
+
+    asyncio.run(main())
