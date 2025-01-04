@@ -19,9 +19,9 @@ async def generation_node(state: State) -> State:
 
 
 async def reflection_node(state: State) -> State:
+    # First message is the original user request. We hold it the same for all nodes
     # Other messages we need to adjust
     cls_map = {"ai": HumanMessage, "human": AIMessage}
-    # First message is the original user request. We hold it the same for all nodes
     translated = [state["messages"][0]] + [
         cls_map[msg.type](content=msg.content) for msg in state["messages"][1:]
     ]
