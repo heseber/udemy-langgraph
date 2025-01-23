@@ -8,16 +8,18 @@ from langchain_core.messages import ToolMessage
 from langgraph.prebuilt import ToolNode
 
 from chains import parser
-from main import State
 from schemas import AnswerQuestion, Reflection
+from state import State
 
 load_dotenv()
+
 
 tavily_tool = TavilySearchResults()
 tavily_tool_node = ToolNode(tools=[tavily_tool])
 
 
 def execute_tools(state: State) -> State:
+    # Access messages through the messages attribute of the State object
     last_ai_message: AIMessage = state["messages"][-1]
     parsed_tool_calls = parser.invoke(last_ai_message)
 
@@ -36,8 +38,7 @@ def execute_tools(state: State) -> State:
                 }
             )
             ids.append(parsed_tool_call["id"])
-    state = State()
-    state["messages"] = [AIMessage(content="", tool_calls=tool_calls)]
+    state.messages.append(AIMessage(content="", tool_calls=tool_calls))
 
     # Run Tavily search
     search_results = tavily_tool_node.invoke(state)
@@ -56,9 +57,10 @@ def execute_tools(state: State) -> State:
         tool_messages.append(
             ToolMessage(content=json.dumps(mapped_result), tool_call_id=id_)
         )
-    output_state = State()
-    output_state["messages"] = tool_messages
-    return output_state
+
+    # Append new messages to existing state
+    state.messages.extend(tool_messages)
+    return state
 
 
 if __name__ == "__main__":
