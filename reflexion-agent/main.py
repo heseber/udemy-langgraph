@@ -1,7 +1,10 @@
+from typing import Callable
+
 from dotenv import load_dotenv
+from langchain.chains.base import Chain
 from langchain.schema import HumanMessage
 from langchain_core.messages import ToolMessage
-from langgraph.graph import END, Graph
+from langgraph.graph import END, StateGraph
 
 from chains import first_responder, revisor
 from state import State
@@ -14,13 +17,24 @@ DRAFT_CREATOR = "draft_creator"
 TOOL_EXECUTOR = "tool_executor"
 REVISOR = "revisor"
 
+
+# Create a function that returns a wrapper turning a chain into a node
+def create_chain_node(chain: Chain) -> Callable[[State], State]:
+    def wrapper(state: State) -> State:
+        messages = state["messages"]
+        result = chain.invoke(input={"messages": messages})
+        return {"messages": [result]}
+
+    return wrapper
+
+
 # Create the graph
-builder = Graph()
+builder = StateGraph(State)
 
 # Add nodes
-builder.add_node(DRAFT_CREATOR, first_responder)
+builder.add_node(DRAFT_CREATOR, create_chain_node(first_responder))
 builder.add_node(TOOL_EXECUTOR, execute_tools)
-builder.add_node(REVISOR, revisor)
+builder.add_node(REVISOR, create_chain_node(revisor))
 
 # Add edges
 builder.add_edge(DRAFT_CREATOR, TOOL_EXECUTOR)
@@ -48,10 +62,14 @@ graph.get_graph().draw_mermaid_png(output_file_path="graph.png")
 
 
 if __name__ == "__main__":
-    print("Hello Reflexion")
+    print("Thinking ...")
     input = HumanMessage(
-        content="Write about AI-Powered SOC / autonomous soc problem domain."
-        " List startups that do that and raised capital."
+        # content="Write about AI-Powered SOC / autonomous soc problem domain."
+        # " List startups that do that and raised capital."
+        # " Keep a list of startups in the final answer."
+        content="Write about the spatial transcriptomics domain."
+        " List companies that provide devices for this technology."
+        " Provide a short comparison of the technologies from different vendors."
     )
     state = State(messages=[input])
     res = graph.invoke(state)

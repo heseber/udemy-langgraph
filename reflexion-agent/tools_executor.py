@@ -7,7 +7,7 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.messages import ToolMessage
 from langgraph.prebuilt import ToolNode
 
-from chains import parser
+from chains import USE_ANTHROPIC, parser
 from schemas import AnswerQuestion, Reflection
 from state import State
 
@@ -16,6 +16,18 @@ load_dotenv()
 
 tavily_tool = TavilySearchResults()
 tavily_tool_node = ToolNode(tools=[tavily_tool])
+
+
+def create_tool_message(result: dict, tool_call_id: str) -> ToolMessage:
+    if USE_ANTHROPIC:
+        formatted_content = {
+            "type": "tool_result",
+            "content": json.dumps(result),
+        }
+    else:
+        formatted_content = json.dumps(result)
+    tool_message = ToolMessage(content=formatted_content, tool_call_id=tool_call_id)
+    return tool_message
 
 
 def execute_tools(state: State) -> State:
@@ -38,10 +50,11 @@ def execute_tools(state: State) -> State:
                 }
             )
             ids.append(parsed_tool_call["id"])
-    state.messages.append(AIMessage(content="", tool_calls=tool_calls))
 
     # Run Tavily search
-    search_results = tavily_tool_node.invoke(state)
+    search_results = tavily_tool_node.invoke(
+        State(messages=[AIMessage(content="", tool_calls=tool_calls)])
+    )
 
     # Now the search results for the different queries need to be merged
     # into a single ToolMessage.
@@ -51,16 +64,13 @@ def execute_tools(state: State) -> State:
     for id_, message, tool_call in zip(ids, search_results["messages"], tool_calls):
         results_map[id_][tool_call["args"]["query"]] = message.content
 
-    # Convert the mapped results to ToolMessage objects
-    tool_messages = []
+    # Create a single ToolMessage with all results
+    all_results = []
     for id_, mapped_result in results_map.items():
-        tool_messages.append(
-            ToolMessage(content=json.dumps(mapped_result), tool_call_id=id_)
-        )
+        all_results.append({"tool_call_id": id_, "result": mapped_result})
 
-    # Append new messages to existing state
-    state.messages.extend(tool_messages)
-    return state
+    tool_message = create_tool_message(result=all_results, tool_call_id=ids[0])
+    return {"messages": [tool_message]}
 
 
 if __name__ == "__main__":
@@ -99,4 +109,5 @@ if __name__ == "__main__":
     ]
     raw_res = execute_tools(state=state)
 
+    raw_res = execute_tools(state)
     print(raw_res)

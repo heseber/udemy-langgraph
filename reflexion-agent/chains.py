@@ -1,4 +1,5 @@
 import datetime
+import os
 
 from dotenv import load_dotenv
 from langchain.output_parsers import JsonOutputToolsParser, PydanticToolsParser
@@ -12,14 +13,15 @@ from schemas import AnswerQuestion, ReviseAnswer
 load_dotenv()
 
 # Get the LLM, either Anthropic Sonnet 3.5 or OpenAI gpt4-o-mini
-USE_ANTHROPIC = True
+USE_ANTHROPIC = os.getenv("USE_ANTHROPIC", "true").lower() == "true"
 if USE_ANTHROPIC:
     llm = ChatAnthropic(
         model="claude-3-5-sonnet-latest",
         max_tokens=2048,  # Adjust this number as needed (up to 4096 for Claude 3 Sonnet)
+        temperature=0,
     )
 else:
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 # Get llm output parsers
 parser = JsonOutputToolsParser(return_id=True)
@@ -40,6 +42,9 @@ actor_prompt_template = ChatPromptTemplate.from_messages(
     [
         SystemMessage(content=system_message),
         MessagesPlaceholder(variable_name="messages"),
+        HumanMessage(
+            content="Answer the user's question above using the required format."
+        ),
     ]
 ).partial(time=lambda: datetime.datetime.now().isoformat())
 
@@ -55,7 +60,7 @@ first_responder = first_responder_prompt_template | llm.bind_tools(
 # Define the revisor
 revise_instruction = """Revise your previous answer using the new information.
     - You should use the previous critique to add important information to your answer.
-        - You MUST include numerical citations in your revised answer to ensure it can be verified.
+        - You MUST include numerical citations from the tool resultsin your revised answer to ensure it can be verified.
         - Add a "References" section to the bottom of your answer (which does not count towards the word limit). In form of
             - [1] https://example.com
             - [2] https://example.com
