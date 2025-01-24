@@ -60,7 +60,7 @@ first_responder = first_responder_prompt_template | llm.bind_tools(
 # Define the revisor
 revise_instruction = """Revise your previous answer using the new information.
     - You should use the previous critique to add important information to your answer.
-        - You MUST include numerical citations from the tool resultsin your revised answer to ensure it can be verified.
+        - You MUST include numerical citations from the tool results in your revised answer to ensure it can be verified.
         - Add a "References" section to the bottom of your answer (which does not count towards the word limit). In form of
             - [1] https://example.com
             - [2] https://example.com
