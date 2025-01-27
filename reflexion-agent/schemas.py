@@ -18,6 +18,7 @@ class AnswerQuestion(BaseModel):
         min_length=1,
         max_length=3,
     )
+    id: str = Field(description="The unique identifier for this tool call")
 
 
 class ReviseAnswer(AnswerQuestion):
