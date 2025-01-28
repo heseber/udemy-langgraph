@@ -8,7 +8,7 @@ from langchain.schema import AIMessage, HumanMessage
 from langchain_community.tools import TavilySearchResults
 from langchain_core.messages import ToolMessage
 
-from schemas import AnswerQuestion
+from schemas import AnswerQuestion, ReviseAnswer
 from state import State
 
 load_dotenv()
@@ -19,7 +19,7 @@ USE_ANTHROPIC = os.getenv("USE_ANTHROPIC", "true").lower() == "true"
 tavily_search = TavilySearchResults()
 
 parser_pydantic = PydanticToolsParser(
-    tools=[AnswerQuestion],
+    tools=[AnswerQuestion, ReviseAnswer],
     return_id=True,  # This should make it return IDs
     first_tool_only=False,
 )
@@ -30,22 +30,21 @@ parser_pydantic = PydanticToolsParser(
 def create_tool_message(tool_call_id: str, result: list) -> ToolMessage:
     if USE_ANTHROPIC:
         formatted_content = {
-            "type": "tool_result",
-            "output": json.dumps(result),
+            "type": "tool_response",
+            "content": result,
         }
     else:
         formatted_content = result
-    tool_message = ToolMessage(
-        content=json.dumps(formatted_content), tool_call_id=tool_call_id
-    )
-    return tool_message
+
+    return ToolMessage(content=json.dumps(formatted_content), tool_call_id=tool_call_id)
 
 
 async def execute_search(state: State) -> State:
     # Transform the tool calls to prepare them for calling Tavily Search
     last_message: AIMessage = state["messages"][-1]
+    tool_call_ids = [tool["id"] for tool in last_message.tool_calls]
     try:
-        parsed_tools: list[AnswerQuestion] = parser_pydantic.invoke(last_message)
+        parsed_tools: list[ReviseAnswer] = parser_pydantic.invoke(last_message)
         if not parsed_tools:
             raise ValueError("No valid tools were parsed from the message")
 
@@ -57,13 +56,13 @@ async def execute_search(state: State) -> State:
         raise ValueError(f"Failed to parse tools from message: {str(e)}")
 
     tool_calls = []
-    for tool in parsed_tools:
+    for tool_call_id, tool in zip(tool_call_ids, parsed_tools):
         for query in tool.search_queries:
             tool_calls.append(
                 {
                     "args": {"query": query},
                     "type": "tool_call",
-                    "id": tool.id,
+                    "id": tool_call_id,
                     "name": "tavily_search_results_json",
                 }
             )
