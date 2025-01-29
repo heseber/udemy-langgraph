@@ -1,12 +1,8 @@
-from typing import Callable
-
 from dotenv import load_dotenv
-from langchain.chains.base import Chain
 from langchain.schema import HumanMessage
-from langchain_core.messages import ToolMessage
 from langgraph.graph import END, StateGraph
 
-from chains import first_responder, revisor
+from chains import first_responder_chain, revisor_chain
 from search import execute_search
 from state import State
 
@@ -18,23 +14,23 @@ TOOL_EXECUTOR = "tool_executor"
 REVISOR = "revisor"
 
 
-# Create a function that returns a wrapper turning a chain into a node
-def create_chain_node(chain: Chain) -> Callable[[State], State]:
-    async def wrapper(state: State) -> State:
-        messages = state["messages"]
-        result = await chain.ainvoke(input={"messages": messages})
-        return {"messages": [result]}
+async def first_responder_node(state: State) -> State:
+    result = await first_responder_chain.ainvoke(input=state)
+    return {"messages": [result]}
 
-    return wrapper
+
+async def revisor_node(state: State) -> State:
+    result = await revisor_chain.ainvoke(input=state)
+    return {"messages": [result]}
 
 
 # Create the graph
 builder = StateGraph(State)
 
 # Add nodes
-builder.add_node(DRAFT_CREATOR, create_chain_node(first_responder))
+builder.add_node(DRAFT_CREATOR, first_responder_node)
 builder.add_node(TOOL_EXECUTOR, execute_search)
-builder.add_node(REVISOR, create_chain_node(revisor))
+builder.add_node(REVISOR, revisor_node)
 
 # Add edges
 builder.add_edge(DRAFT_CREATOR, TOOL_EXECUTOR)
@@ -42,9 +38,7 @@ builder.add_edge(TOOL_EXECUTOR, REVISOR)
 
 
 def event_loop(state: State) -> str:
-    count_tool_visits = sum(isinstance(item, ToolMessage) for item in state["messages"])
-    num_iterations = count_tool_visits
-    if num_iterations > MAX_ITERATIONS:
+    if state["iteration"] > state["max_iterations"]:
         return END
     return TOOL_EXECUTOR
 
@@ -74,9 +68,20 @@ if __name__ == "__main__":
             " List companies that provide devices for this technology."
             " Provide a short comparison of the technologies from different vendors."
         )
-        state = State(messages=[input])
+        state = State(
+            messages=[input], references=[], iteration=0, max_iterations=MAX_ITERATIONS
+        )
         res = await graph.ainvoke(state)
         final_message = res["messages"][-1]
         print(final_message.tool_calls[0]["args"]["answer"])
+        print("""
+All References:
+While the references section above contains only references from the last iteration
+of the Reflexion loop, the reference list below contains all references that were
+returned from internet searches for the queries suggested by the LLM. Please note that
+citation numbers in the list below do not match numbers from the list above.             
+""")
+        for ref in res["references"]:
+            print(f"- [{ref.index}] {ref.url}")
 
     asyncio.run(main())

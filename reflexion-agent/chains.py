@@ -1,8 +1,7 @@
-import datetime
 import os
 
 from dotenv import load_dotenv
-from langchain.output_parsers import JsonOutputToolsParser, PydanticToolsParser
+from langchain.output_parsers import PydanticToolsParser
 from langchain.schema import HumanMessage, SystemMessage
 from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -23,53 +22,66 @@ if USE_ANTHROPIC:
 else:
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
-# Get llm output parsers
-parser = JsonOutputToolsParser(return_id=True)
-parser_pydantic = PydanticToolsParser(tools=[AnswerQuestion], return_id=True)
-
-# Define the system message used for both the first responder and for the revisor
-system_message = """
-    You are an expert researcher.
-    Current time: {time}
-
-    1. {first_instruction}
-    2. Reflect and critique your answer. Be severe to maximize improvement.
-    3. Recommend search queries to research information and improve your answer.
-"""
-
-# Define a prompt that is used for both the first responder and for the revisor
-actor_prompt_template = ChatPromptTemplate.from_messages(
-    [
-        SystemMessage(content=system_message),
-        MessagesPlaceholder(variable_name="messages"),
-        HumanMessage(
-            content="Answer the user's question above using the required format."
-        ),
-    ]
-).partial(time=lambda: datetime.datetime.now().isoformat())
-
-# Define the first responder
-first_responder_prompt_template = actor_prompt_template.partial(
-    first_instruction="Provide a detailed ~250 word answer."
+# Get llm output parser
+parser_pydantic = PydanticToolsParser(
+    tools=[AnswerQuestion, ReviseAnswer], return_id=True
 )
 
-first_responder = first_responder_prompt_template | llm.bind_tools(
+# Define the system message used for both the first responder and for the revisor
+system_message_template = """
+    You are an expert researcher.
+
+    1. {first_instruction}
+    2. Reflect and critique your answer.
+    3. {search_instruction}
+"""
+
+# Define the system messages for the first responder
+system_message_first_responder = system_message_template.format(
+    first_instruction="Provide a detailed ~250 word answer for the user's question.",
+    search_instruction="Recommend search queries to research information and improve your answer.",
+)
+
+# Define the system messages for the revisor
+system_message_revisor = system_message_template.format(
+    first_instruction="""Revise the content with these requirements:
+        1.1. Incorporate information from references using [n] citations
+        1.2. Address all critique points
+        1.3. Maintain a professional tone
+        1.4. End with a 'References' section listing all references used.
+             Mark parts of the answer that are based on references with [n] citations.
+             Use this format for the references:
+             - [1] https://example.com
+             - [2] https://example.com""",
+    search_instruction="Recommend additional search queries to research information and improve your answer.",
+)
+
+# Define the first responder prompt template
+first_responder_prompt_template = ChatPromptTemplate.from_messages(
+    [
+        SystemMessage(content=system_message_first_responder),
+        MessagesPlaceholder(variable_name="messages"),
+    ]
+)
+
+# Define the revisor prompt template
+revisor_prompt_template = ChatPromptTemplate.from_messages(
+    [
+        SystemMessage(content=system_message_revisor),
+        MessagesPlaceholder(variable_name="messages"),
+    ]
+)
+
+# Define the first responder chain
+first_responder_chain = first_responder_prompt_template | llm.bind_tools(
     tools=[AnswerQuestion], tool_choice="AnswerQuestion"
 )
 
-# Define the revisor
-revise_instruction = """Revise your previous answer using the new information.
-    - You should use the previous critique to add important information to your answer.
-        - You MUST include numerical citations from the tool results in your revised answer to ensure it can be verified.
-        - Add a "References" section to the bottom of your answer (which does not count towards the word limit). In form of
-            - [1] https://example.com
-            - [2] https://example.com
-    - You should use the previous critique to remove superfluous information from your answer and make SURE it is not more than 250 words.
-"""
+# Define the revisor chain
+revisor_chain = revisor_prompt_template | llm.bind_tools(
+    tools=[ReviseAnswer], tool_choice="ReviseAnswer"
+)
 
-revisor = actor_prompt_template.partial(
-    first_instruction=revise_instruction
-) | llm.bind_tools(tools=[ReviseAnswer], tool_choice="ReviseAnswer")
 
 # Main function
 if __name__ == "__main__":
@@ -77,10 +89,6 @@ if __name__ == "__main__":
         content="Write about AI-Powered SOC / autonomous soc problem domain,"
         " list startups that do that and raised capital."
     )
-    chain = (
-        first_responder_prompt_template
-        | llm.bind_tools(tools=[AnswerQuestion], tool_choice="AnswerQuestion")
-        | parser_pydantic
-    )
+    chain = first_responder_chain | parser_pydantic
     res = chain.invoke(input={"messages": [human_message]})
     print(res)
