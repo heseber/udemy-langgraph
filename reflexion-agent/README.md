@@ -4,7 +4,7 @@ This is a simple example of a reflexion loop using LangGraph. It is based on the
 
 > [!WARNING]
 > This is an experimental project and the code may break with future updates to LangGraph and LangChain.
-> OpenAI's gpt-4o-mini fails to follow the instructions to use the references in the answer.
+> OpenAI's gpt-4o-mini fails to follow the instructions to add a references section at the end of the answer.
 > Anthropic's claude-3-5-sonnet-latest works as expected.
 
 Changes I made:
