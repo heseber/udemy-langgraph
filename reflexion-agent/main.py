@@ -65,7 +65,8 @@ if __name__ == "__main__":
             # " List startups that do that and raised capital."
             # " Keep a list of startups in the final answer."
             content="Write about the spatial transcriptomics domain."
-            " List companies that provide devices for this technology."
+            " Make sure you use up-to-date information as of today."
+            " List all companies that provide devices for this technology, and list all technologies they offer."
             " Provide a short comparison of the technologies from different vendors."
         )
         state = State(
@@ -78,8 +79,11 @@ if __name__ == "__main__":
 All References:
 While the references section above contains only references from the last iteration
 of the Reflexion loop, the reference list below contains all references that were
-returned from internet searches for the queries suggested by the LLM. Please note that
-citation numbers in the list below do not match numbers from the list above.             
+returned from internet searches for the queries suggested by the LLM.
+
+OpenAI fails to add a references section to the above message, and citation numbers
+in the answer text do not match the reference list below. For Anthropic, it works
+as expected.     
 """)
         for ref in res["references"]:
             print(f"- [{ref.index}] {ref.url}")

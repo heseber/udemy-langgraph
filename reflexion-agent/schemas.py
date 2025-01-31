@@ -19,16 +19,13 @@ class AnswerQuestion(BaseModel):
     answer: str = Field(description="~250 word detailed answer to the question.")
     reflection: Reflection = Field(description="Your reflection on the initial answer.")
     search_queries: list[str] = Field(
-        description="1-3 search queries for researching improvements to address the critique of your current answer.",
-        min_length=1,
-        max_length=3,
+        description="1-3 search queries for researching improvements to address the critique of your current answer."
     )
-    id: str = Field(description="The unique identifier for this tool call")
 
 
 class ReviseAnswer(AnswerQuestion):
     """Revise your original answer to your question."""
 
-    references: list[str] = Field(
+    references: list[Reference] = Field(
         description="Citations motivating your updated answer."
     )

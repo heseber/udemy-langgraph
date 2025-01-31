@@ -1,7 +1,6 @@
 import os
 
 from dotenv import load_dotenv
-from langchain.output_parsers import PydanticToolsParser
 from langchain.schema import HumanMessage, SystemMessage
 from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -22,11 +21,6 @@ if USE_ANTHROPIC:
 else:
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
-# Get llm output parser
-parser_pydantic = PydanticToolsParser(
-    tools=[AnswerQuestion, ReviseAnswer], return_id=True
-)
-
 # Define the system message used for both the first responder and for the revisor
 system_message_template = """
     You are an expert researcher.
@@ -39,7 +33,8 @@ system_message_template = """
 # Define the system messages for the first responder
 system_message_first_responder = system_message_template.format(
     first_instruction="Provide a detailed ~250 word answer for the user's question.",
-    search_instruction="Recommend search queries to research information and improve your answer.",
+    search_instruction="""Recommend 1-3 specific search queries to research information and improve your answer. 
+    Important: You must provide exactly 1-3 search queries, no more.""",
 )
 
 # Define the system messages for the revisor
@@ -48,12 +43,16 @@ system_message_revisor = system_message_template.format(
         1.1. Incorporate information from references using [n] citations
         1.2. Address all critique points
         1.3. Maintain a professional tone
-        1.4. End with a 'References' section listing all references used.
+        1.4. You must end the answer with a 'References' section listing all references used.
              Mark parts of the answer that are based on references with [n] citations.
-             Use this format for the references:
+             Use this format for the 'References' section:
+
+             References:
              - [1] https://example.com
-             - [2] https://example.com""",
-    search_instruction="Recommend additional search queries to research information and improve your answer.",
+             - [2] https://example.com
+        """,
+    search_instruction="""Recommend additional search queries to research information and improve your answer.
+    Important: You must provide exactly 1-3 search queries, no more.""",
 )
 
 # Define the first responder prompt template
@@ -74,12 +73,14 @@ revisor_prompt_template = ChatPromptTemplate.from_messages(
 
 # Define the first responder chain
 first_responder_chain = first_responder_prompt_template | llm.bind_tools(
-    tools=[AnswerQuestion], tool_choice="AnswerQuestion"
+    tools=[AnswerQuestion],
+    tool_choice="AnswerQuestion",
 )
 
 # Define the revisor chain
 revisor_chain = revisor_prompt_template | llm.bind_tools(
-    tools=[ReviseAnswer], tool_choice="ReviseAnswer"
+    tools=[ReviseAnswer],
+    tool_choice="ReviseAnswer",
 )
 
 
@@ -89,6 +90,6 @@ if __name__ == "__main__":
         content="Write about AI-Powered SOC / autonomous soc problem domain,"
         " list startups that do that and raised capital."
     )
-    chain = first_responder_chain | parser_pydantic
+    chain = first_responder_chain
     res = chain.invoke(input={"messages": [human_message]})
     print(res)

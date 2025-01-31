@@ -2,7 +2,7 @@ import json
 import os
 
 from dotenv import load_dotenv
-from langchain.output_parsers import PydanticToolsParser
+from langchain.output_parsers import JsonOutputToolsParser
 from langchain.schema import AIMessage, HumanMessage
 from langchain_community.tools import TavilySearchResults
 from langchain_community.utilities.tavily_search import TavilySearchAPIWrapper
@@ -19,11 +19,8 @@ USE_ANTHROPIC = os.getenv("USE_ANTHROPIC", "true").lower() == "true"
 tavily_api_wrapper = TavilySearchAPIWrapper()
 tavily_search = TavilySearchResults(api_wrapper=tavily_api_wrapper)
 
-parser_pydantic = PydanticToolsParser(
-    tools=[AnswerQuestion, ReviseAnswer],
-    return_id=True,  # This should make it return IDs
-    first_tool_only=False,
-)
+# Get llm output parser based on which LLM we're using
+parser = JsonOutputToolsParser(tools=[AnswerQuestion, ReviseAnswer])
 
 
 # Anthropic expects a different message format than OpenAI, therefore we
@@ -60,31 +57,40 @@ async def execute_search(state: State) -> State:
         raise ValueError("Multiple tool calls in response")
 
     # Parse the tool call
-    tool_call_id = last_message.tool_calls[0]["id"]
+    tool_call = last_message.tool_calls[0]
+    tool_call_id = tool_call["id"]
+
     try:
-        parsed_tools: list[ReviseAnswer] = parser_pydantic.invoke(last_message)
+        parsed_tools = parser.invoke(last_message)
         if not parsed_tools:
             raise ValueError("No valid tools were parsed from the message")
-
-        # Validate each tool has search queries
+        search_queries = []
         for tool in parsed_tools:
-            if not tool.search_queries:
-                raise ValueError(f"Tool {tool.id} has no search queries")
+            # First try to get queries directly from args
+            queries = tool["args"].get("search_queries", [])
+            if not queries:
+                # If not found, try to get from reflection
+                reflection = tool["args"].get("reflection", {})
+                queries = reflection.get("search_queries", [])
+            if queries:
+                search_queries.extend(queries)
+        if not search_queries:
+            raise ValueError("No search queries found in tools")
     except Exception as e:
         raise ValueError(f"Failed to parse tools from message: {str(e)}")
 
     # Create the tool calls for Tavily Search
     tool_calls = []
-    for tool in parsed_tools:
-        for query in tool.search_queries:
-            tool_calls.append(
-                {
-                    "args": {"query": query},
-                    "type": "tool_call",
-                    "id": tool_call_id,
-                    "name": "tavily_search_results_json",
-                }
-            )
+    for query in search_queries:
+        tool_calls.append(
+            {
+                "args": {"query": query},
+                "type": "tool_call",
+                "id": tool_call_id,
+                "name": "tavily_search_results_json",
+            }
+        )
+
     # Run the Tavily Search
     search_results: list[ToolMessage] = await tavily_search.abatch(tool_calls)
 
