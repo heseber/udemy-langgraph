@@ -44,9 +44,6 @@ def create_tool_message(tool_call_id: str, result: list) -> ToolMessage:
 async def execute_search(state: State) -> State:
     """Transform the tool calls to prepare them for calling Tavily Search"""
 
-    # Increment the iteration counter
-    state["iteration"] += 1
-
     # Get the last message
     last_message: AIMessage = state["messages"][-1]
 
@@ -96,6 +93,7 @@ async def execute_search(state: State) -> State:
 
     # Parse the search results
     new_references: list[Reference] = []
+    next_index = len(state["references"]) + 1
     for message in search_results:
         # Sometimes a search may fail. We don't retry but just skip that search.
         if "results" not in message.artifact:
@@ -106,15 +104,18 @@ async def execute_search(state: State) -> State:
                 url=result["url"],
                 title=result["title"],
                 content=result["content"],
-                index=len(state["references"]) + 1,
+                index=next_index,
             )
             new_references.append(new_reference)
-            state["references"].append(new_reference)
+            next_index += 1
 
     # Create the tool message for the tool call
     results = create_tool_message(tool_call_id=tool_call_id, result=new_references)
-    state["messages"].append(results)
-    return state
+    return {
+        "messages": [results],
+        "references": new_references,
+        "iteration": 1,
+    }
 
 
 if __name__ == "__main__":
