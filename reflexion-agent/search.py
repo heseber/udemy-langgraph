@@ -42,7 +42,7 @@ def create_tool_message(tool_call_id: str, result: list) -> ToolMessage:
 
 
 async def execute_search(state: State) -> State:
-    """Transform the tool calls to prepare them for calling Tavily Search"""
+    """Execute a search for a query and return the results."""
 
     # Get the last message
     last_message: AIMessage = state["messages"][-1]
