@@ -77,13 +77,10 @@ if __name__ == "__main__":
         print(final_message.tool_calls[0]["args"]["answer"])
         print("""
 All References:
-While the references section above contains only references from the last iteration
-of the Reflexion loop, the reference list below contains all references that were
-returned from internet searches for the queries suggested by the LLM.
-
-OpenAI fails to add a references section to the above message, and citation numbers
-in the answer text do not match the reference list below. For Anthropic, it works
-as expected.     
+While the references section above contains only references from one iteration
+of the Reflexion loop (first iteration for OpenAI, last iteration for Anthropic),
+the reference list below contains all references that were returned from internet
+searches for the queries suggested by the LLM.
 """)
         for ref in res["references"]:
             print(f"- [{ref.index}] {ref.url}")

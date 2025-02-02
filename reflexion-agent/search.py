@@ -23,20 +23,15 @@ tavily_search = TavilySearchResults(api_wrapper=tavily_api_wrapper)
 parser = JsonOutputToolsParser(tools=[AnswerQuestion, ReviseAnswer])
 
 
-# Anthropic expects a different message format than OpenAI, therefore we
-# define an auxiliary function creating a tool message of the required format.
 def create_tool_message(tool_call_id: str, result: list) -> ToolMessage:
     # Convert Reference objects to dictionaries
     if isinstance(result[0], Reference):
         result = [ref.model_dump() for ref in result]
 
-    if USE_ANTHROPIC:
-        formatted_content = {
-            "type": "tool_response",
-            "content": result,
-        }
-    else:
-        formatted_content = result
+    formatted_content = {
+        "type": "tool_response",
+        "content": result,
+    }
 
     return ToolMessage(content=json.dumps(formatted_content), tool_call_id=tool_call_id)
 

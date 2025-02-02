@@ -27,5 +27,5 @@ class ReviseAnswer(AnswerQuestion):
     """Revise your original answer to your question."""
 
     references: list[Reference] = Field(
-        description="Citations motivating your updated answer."
+        description="References from the previous tool call that you used to answer the question."
     )

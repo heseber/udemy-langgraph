@@ -19,7 +19,7 @@ if USE_ANTHROPIC:
         temperature=0,
     )
 else:
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    llm = ChatOpenAI(model="gpt-4o", temperature=0)
 
 # Define the system message used for both the first responder and for the revisor
 system_message_template = """
