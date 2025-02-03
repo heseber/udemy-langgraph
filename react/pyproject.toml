@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "react"
+version = "0.1.0"
+description = ""
+authors = ["Henrik Seidel <heseber+github@mailbox.org>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+langchain = "^0.3.17"
+langgraph = "^0.2.69"
+black = "^25.1.0"
+langchain-openai = "^0.3.3"
+langchain-anthropic = "^0.3.5"
+ruff = "^0.9.4"
+isort = "^6.0.0"
+python-dotenv = "^1.0.1"
+langchain-community = "^0.3.16"
+langchain-tools = "^0.1.34"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
