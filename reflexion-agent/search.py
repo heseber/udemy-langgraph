@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Any
 
 from dotenv import load_dotenv
 from langchain.output_parsers import JsonOutputToolsParser
@@ -36,7 +37,7 @@ def create_tool_message(tool_call_id: str, result: list) -> ToolMessage:
     return ToolMessage(content=json.dumps(formatted_content), tool_call_id=tool_call_id)
 
 
-async def execute_search(state: State) -> State:
+async def execute_search(state: State) -> dict[str, Any]:
     """Execute a search for a query and return the results."""
 
     # Get the last message

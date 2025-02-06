@@ -1,3 +1,5 @@
+from typing import Any
+
 from dotenv import load_dotenv
 from langchain.schema import HumanMessage
 from langgraph.graph import END, StateGraph
@@ -14,12 +16,12 @@ TOOL_EXECUTOR = "tool_executor"
 REVISOR = "revisor"
 
 
-async def first_responder_node(state: State) -> State:
+async def first_responder_node(state: State) -> dict[str, Any]:
     result = await first_responder_chain.ainvoke(input=state)
     return {"messages": [result]}
 
 
-async def revisor_node(state: State) -> State:
+async def revisor_node(state: State) -> dict[str, Any]:
     result = await revisor_chain.ainvoke(input=state)
     return {"messages": [result]}
 
