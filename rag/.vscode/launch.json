@@ -1,0 +1,82 @@
+{
+    // Verwendet IntelliSense zum Ermitteln möglicher Attribute.
+    // Zeigen Sie auf vorhandene Attribute, um die zugehörigen Beschreibungen anzuzeigen.
+    // Weitere Informationen finden Sie unter https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "variablePresentation": {
+                "function": "hide",
+                "special": "hide",
+                "all": "group"
+            }
+        },
+        {
+            "name": "Python Debugger: main.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "main.py",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "variablePresentation": {
+                "function": "hide",
+                "special": "hide",
+                "all": "group"
+            }
+        },
+        {
+            "name": "Python Debugger: web_search.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "graph/nodes/web_search.py",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "variablePresentation": {
+                "function": "hide",
+                "special": "hide",
+                "all": "group"
+            }
+        },
+        {
+            "name": "Python Debugger: graph_core.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "graph/graph_core.py",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "console": "integratedTerminal",
+            "variablePresentation": {
+                "function": "hide",
+                "special": "hide",
+                "all": "group"
+            }
+        },
+        {
+            "name": "Python Debugger: generate.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "graph/nodes/generate.py",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "variablePresentation": {
+                "function": "hide",
+                "special": "hide",
+                "all": "group"
+            }
+        }
+    ]
+}
