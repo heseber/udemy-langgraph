@@ -2,7 +2,9 @@ from pprint import pprint
 
 from dotenv import load_dotenv
 
+from graph.chains.answer_grader import GradeAnswer, answer_grader
 from graph.chains.generation import generation_chain
+from graph.chains.hallucination_grader import GradeHallucination, hallucination_grader
 from graph.chains.retrieval_grader import GradeDocument, retrieval_grader
 from ingestion import retriever
 
@@ -34,3 +36,50 @@ def test_generation_chain() -> None:
     docs = retriever.invoke(question)
     generation = generation_chain.invoke({"question": question, "context": docs})
     pprint(generation)
+
+
+def test_hallucination_grader_yes() -> None:
+    question = "agent memory"
+    docs = retriever.invoke(question)
+    generation = generation_chain.invoke({"question": question, "context": docs})
+    res: GradeHallucination = hallucination_grader.invoke(
+        {"documents": docs, "generation": generation}
+    )
+    assert res.binary_score is True
+
+
+def test_hallucination_grader_no() -> None:
+    question = "agent memory"
+    docs = retriever.invoke(question)
+    res: GradeHallucination = hallucination_grader.invoke(
+        {
+            "documents": docs,
+            "generation": "In order to make pizza we need to first start with the dough.",
+        }
+    )
+    assert res.binary_score is False
+
+
+def test_answer_grader_yes() -> None:
+    question = "agent memory"
+    res: GradeAnswer = answer_grader.invoke(
+        {
+            "question": question,
+            "generation": "Agent memory is a system that enables AI agents to store,"
+            " retrieve, and utilize information from previous interactions, including"
+            " facts (semantic memory), experiences (episodic memory), and operational"
+            " rules (procedural memory)",
+        }
+    )
+    assert res.binary_score is True
+
+
+def test_answer_grader_no() -> None:
+    question = "agent memory"
+    res: GradeAnswer = answer_grader.invoke(
+        {
+            "question": question,
+            "generation": "In order to make pizza we need to first start with the dough.",
+        }
+    )
+    assert res.binary_score is False

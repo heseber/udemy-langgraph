@@ -1,22 +1,10 @@
-import os
-
 from dotenv import load_dotenv
-from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 
-load_dotenv()
+from graph.chains.llm import llm
 
-# Get the LLM, either Anthropic Sonnet 3.5 or OpenAI gpt4-o-mini
-USE_ANTHROPIC = os.getenv("USE_ANTHROPIC", "true").lower() == "true"
-if USE_ANTHROPIC:
-    llm = ChatAnthropic(
-        model="claude-3-5-sonnet-latest",
-        temperature=0,
-    )
-else:
-    llm = ChatOpenAI(model="gpt-4o", temperature=0)
+load_dotenv()
 
 
 class GradeDocument(BaseModel):
