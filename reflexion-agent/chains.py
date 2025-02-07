@@ -1,7 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from langchain.schema import HumanMessage, SystemMessage
+from langchain.schema import HumanMessage
 from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
@@ -58,7 +58,7 @@ system_message_revisor = system_message_template.format(
 # Define the first responder prompt template
 first_responder_prompt_template = ChatPromptTemplate.from_messages(
     [
-        SystemMessage(content=system_message_first_responder),
+        ("system", system_message_first_responder),
         MessagesPlaceholder(variable_name="messages"),
     ]
 )
@@ -66,7 +66,7 @@ first_responder_prompt_template = ChatPromptTemplate.from_messages(
 # Define the revisor prompt template
 revisor_prompt_template = ChatPromptTemplate.from_messages(
     [
-        SystemMessage(content=system_message_revisor),
+        ("system", system_message_revisor),
         MessagesPlaceholder(variable_name="messages"),
     ]
 )
