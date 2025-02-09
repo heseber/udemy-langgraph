@@ -3,6 +3,7 @@ from langgraph.graph import END, StateGraph
 
 from graph.chains.answer_grader import answer_grader
 from graph.chains.hallucination_grader import hallucination_grader
+from graph.chains.router import RouteQuery, question_router
 from graph.consts import GENERATE, GRADE_DOCUMENTS, RETRIEVE, WEBSEARCH
 from graph.nodes import generate, grade_documents, retrieve, web_search
 from graph.state import GraphState
@@ -20,6 +21,18 @@ def decide_to_generate(state: GraphState) -> str:
     else:
         print("---DECISION: GENERATE---")
         return GENERATE
+
+
+def route_question(state: GraphState) -> str:
+    print("---ROUTE QUESTION---")
+    question = state["question"]
+    source: RouteQuery = question_router.invoke({"question": question})
+    if source.data_source == "vectorstore":
+        print("---DECISION: USE VECTORSTORE---")
+        return RETRIEVE
+    else:
+        print("---DECISION: USE WEBSEARCH---")
+        return WEBSEARCH
 
 
 def grade_generation_grounded_in_documents_and_question(state: GraphState) -> str:
@@ -69,7 +82,13 @@ def graph() -> StateGraph:
         {"not supported": GENERATE, "not useful": WEBSEARCH, "useful": END},
     )
 
-    g.set_entry_point(RETRIEVE)
+    g.set_conditional_entry_point(
+        route_question,
+        {
+            RETRIEVE: RETRIEVE,
+            WEBSEARCH: WEBSEARCH,
+        },
+    )
 
     return g
 

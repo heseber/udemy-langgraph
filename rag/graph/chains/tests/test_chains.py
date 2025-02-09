@@ -6,6 +6,7 @@ from graph.chains.answer_grader import GradeAnswer, answer_grader
 from graph.chains.generation import generation_chain
 from graph.chains.hallucination_grader import GradeHallucination, hallucination_grader
 from graph.chains.retrieval_grader import GradeDocument, retrieval_grader
+from graph.chains.router import RouteQuery, question_router
 from ingestion import retriever
 
 load_dotenv()
@@ -83,3 +84,15 @@ def test_answer_grader_no() -> None:
         }
     )
     assert res.binary_score is False
+
+
+def test_question_router_vectorstore() -> None:
+    question = "What is agent memory?"
+    res: RouteQuery = question_router.invoke({"question": question})
+    assert res.data_source == "vectorstore"
+
+
+def test_question_router_websearch() -> None:
+    question = "What is the capital of France?"
+    res: RouteQuery = question_router.invoke({"question": question})
+    assert res.data_source == "websearch"

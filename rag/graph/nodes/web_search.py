@@ -17,7 +17,7 @@ def web_search(state: GraphState) -> dict[str, Any]:
     """Runs a web search and returns the results."""
     print("---RUN WEB SEARCH---")
     question = state["question"]
-    documents = state["documents"]
+    documents = state.get("documents", None)
     tavily_results = web_search_tool.invoke(question)
     joined_tavily_results = "\n".join([result["content"] for result in tavily_results])
     web_results = Document(page_content=joined_tavily_results)
