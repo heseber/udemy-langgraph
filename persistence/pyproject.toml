@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "persistence"
+version = "0.1.0"
+description = ""
+authors = ["Henrik Seidel <heseber+github@mailbox.org>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+langgraph = "^0.2.70"
+langchain-community = "^0.3.17"
+python-dotenv = "^1.0.1"
+black = "^25.1.0"
+isort = "^6.0.0"
+ruff = "^0.9.6"
+langgraph-checkpoint-sqlite = "^2.0.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
