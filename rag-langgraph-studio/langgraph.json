@@ -1,0 +1,7 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "rag": "./graph/graph_core.py:app"
+  },
+  "env": "./.env"
+}

@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "rag-langgraph-studio"
+version = "0.1.0"
+description = ""
+authors = ["Henrik Seidel <heseber+github@mailbox.org>"]
+readme = "README.md"
+packages = [{include = "graph"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+langchain-anthropic = "^0.3.7"
+langchain-openai = "^0.3.5"
+langchain = "^0.3.18"
+langgraph = "^0.2.71"
+black = "^25.1.0"
+ruff = "^0.9.6"
+beautifulsoup4 = "^4.13.3"
+langchainhub = "^0.1.21"
+langchain-community = "^0.3.17"
+tavily-python = "^0.5.1"
+python-dotenv = "^1.0.1"
+isort = "^6.0.0"
+pytest = "^8.3.4"
+langchain-chroma = "^0.2.1"
+pytest-dotenv = "^0.5.2"
+langgraph-cli = {extras = ["inmem"], version = "^0.1.71"}
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[project]
+name = "rag-langgraph-studio"
+version = "0.1.0"
