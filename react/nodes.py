@@ -1,21 +1,31 @@
 from dotenv import load_dotenv
-from langgraph.prebuilt import ToolExecutor
+from langgraph.graph import MessagesState
+from langgraph.prebuilt import ToolNode
 
-from agent_setup import react_agent_runnable, tools
-from state import AgentState
+from agent_setup import llm, tools
 
 load_dotenv()
 
+SYSTEM_MESSAGE = """
+You are a helpful assistant that can use tools to answer questions.
 
-def run_agent_reasoning_engine(state: AgentState) -> AgentState:
-    agent_outcome = react_agent_runnable.invoke(state)
-    return {"agent_outcome": agent_outcome}
+IMPORTANT INSTRUCTIONS:
+1. Use the search_weather tool to find current temperature information for locations
+2. Use the triple tool to multiply numbers by 3
+3. After getting the information you need, provide a clear final answer
+4. Do not make unnecessary tool calls once you have the required information
+5. Be concise and direct in your responses
+"""
 
 
-tool_executor = ToolExecutor(tools)
+def run_agent_reasoning(state: MessagesState) -> MessagesState:
+    """
+    Run the agent reasoning node.
+    """
+    response = llm.invoke(
+        [{"role": "system", "content": SYSTEM_MESSAGE}, *state["messages"]]
+    )
+    return {"messages": [response]}
 
 
-def execute_tool(state: AgentState) -> AgentState:
-    agent_action = state["agent_outcome"]
-    output = tool_executor.invoke(agent_action)
-    return {"intermediate_steps": [(agent_action, str(output))]}
+tool_node = ToolNode(tools)
